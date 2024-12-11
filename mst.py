@@ -151,7 +151,7 @@ def display_MST(graph, state, algorithm, min_pop):
 
     fig, ax = plt.subplots(figsize=(16, 12))
 
-    if state == "United States (pop. 250000+)":
+    if state == "United States":
         us_states.plot(ax=ax, edgecolor="black", facecolor="white", linewidth=0.25)
     else:
         state_outline = us_states[us_states["NAME"] == state]
