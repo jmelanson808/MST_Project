@@ -146,7 +146,7 @@ def union(parents, rank, a, b):
 
 
 # Uses Matplotlib and Geopandas to draw the tree.
-def display_MST(graph, state, algorithm):
+def display_MST(graph, state, algorithm, min_pop):
     us_states = gpd.read_file("US_state_shapefile/tl_2024_us_state.shp")
 
     fig, ax = plt.subplots(figsize=(16, 12))
@@ -180,7 +180,7 @@ def display_MST(graph, state, algorithm):
                     color="red"
                     )
 
-    if state == "United States (pop. 250000+)":
+    if state == "United States":
         plt.xlim(-160, -60)
         plt.ylim(15, 65)
     if state == "Alaska":
@@ -192,7 +192,7 @@ def display_MST(graph, state, algorithm):
 
     ax.set_xlabel('longitude')
     ax.set_ylabel('latitude')
-    ax.set_title('Minimum Spanning Tree of US Cities in ' + state + ' using ' + algorithm + ' (' + str(graph.duration) + ' seconds)')
+    ax.set_title('Minimum Spanning Tree of US Cities in ' + state + ' (pop. ' + min_pop + '+) using ' + algorithm + ' (' + str(graph.duration) + ' seconds)')
 
     plt.show()
 
@@ -208,7 +208,7 @@ def state_mapper(state):
         "MT": "Montana", "NE": "Nebraska", "NV": "Nevada", "NH": "New Hampshire", "NJ": "New Jersey",
         "NM": "New Mexico", "NY": "New York", "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio",
         "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
-        "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "US": "United States (pop. 250000+)", "UT": "Utah",
+        "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "US": "United States", "UT": "Utah",
         "VA": "Virginia", "VT": "Vermont", "WA": "Washington", "WI": "Wisconsin", "WV": "West Virginia", "WY": "Wyoming"
     }
 
@@ -216,26 +216,30 @@ def state_mapper(state):
 
 
 class MST:
-    def __init__(self, state, alg):
+    def __init__(self, state, alg, min_pop):
         # Build city data based on state parameter.
+        self.min_pop = int(min_pop)
+
         if state == "US":
-            self.data = filter(lambda c: c.population > 250000, bridges.get_us_cities_data())
+            self.data = filter(lambda c: c.population > self.min_pop, bridges.get_us_cities_data())
         else:
-            self.data = filter(lambda c: c.state == state, bridges.get_us_cities_data())
+            self.data = filter(lambda c: c.state == state and c.population > self.min_pop, bridges.get_us_cities_data())
+
         self.cities = {}
         self.test_cities = {}
         self.state = state
         self.alg = alg
         self.time = time.time()
 
+
         # We only need the geographic coordinates for each city.
         for city in self.data:
             self.cities[city.city] = (city.lon, city.lat)
 
 
-    def solve_MST(self, algorithm):
+    def solve_MST(self, algorithm, min_pop):
         result = get_mst(self.cities, algorithm)
-        display_MST(result, state_mapper(self.state), self.alg)
+        display_MST(result, state_mapper(self.state), self.alg, min_pop)
 
 
 class Result:
@@ -246,9 +250,10 @@ class Result:
 
 if __name__ == '__main__':
     # Run this program in the terminal like:
-    # python mst.py UT prim1
+    # python mst.py UT prim1 5000
     # You can substitute UT parameter with any other US state abbreviation.
     #   OR you can enter US to see the MST for all US cities with population over 250000.
     # Options for second parameter are prim1, prim2, or kruskal.
-    tree = MST(sys.argv[1], sys.argv[2])
-    tree.solve_MST(sys.argv[2])
+    # The third parameter will set the minimum population for a city to be used in the graph.
+    tree = MST(sys.argv[1], sys.argv[2], sys.argv[3])
+    tree.solve_MST(sys.argv[2], sys.argv[3])
